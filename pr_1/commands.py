@@ -10,7 +10,9 @@ class CommandHandler:
         try:
             command = json.loads(command_json)
             cmd_type = command.get("cmd")
+            
             print(f" {cmd_type}")
+            
             if cmd_type == "move":
                 return self.handle_move(command)
             elif cmd_type == "turn_on":
@@ -19,6 +21,8 @@ class CommandHandler:
                 return self.handle_turn_off()
             elif cmd_type == "get_status":
                 return self.handle_get_status()
+            elif cmd_type == "reset":
+                return self.handle_reset()
             else:
                 return json.dumps({"error": "Неизвестная команда"})
         except json.JSONDecodeError:
@@ -34,7 +38,8 @@ class CommandHandler:
         
         if not (1 <= speed <= 10):
             return json.dumps({"error": "Скорость должна быть от 1 до 10"})
-        
+        if not (0<= x <= self.machine.max_x and 0 <= y <= self.machine.max_y):
+            return json.dumps({"error": "Координаты выходят за границы поля"})
         self.machine.set_speed(speed)
         self.machine.update_position(x, y)
         
@@ -47,10 +52,17 @@ class CommandHandler:
     
     def handle_turn_off(self):
         self.machine.toggle_laser(False)
-        return json.dumps({"stutus": "laser_off"})
+        return json.dumps({"status": "laser_off"})
     
     def handle_get_status(self):
         return json.dumps(self.machine.get_status())
+    
+    def handle_reset(self):
+        self.machine.x = 0
+        self.machine.y = 0
+        self.machine.speed = 1
+        self.machine.laser_on = False
+        return json.dumps({"status": "reset_done", "x" : 0, "y" : 0, "speed": 0, "laser_on": False})
     
 if __name__ == "__main__":
     machine = MachineState()
@@ -60,3 +72,4 @@ if __name__ == "__main__":
     print(handler.process_command('{"cmd": "turn_on"}'))
     print(handler.process_command('{"cmd": "get_status"}'))
     print(handler.process_command('{"cmd": "move", "x": 600, "y": 100}'))  # Ошибка выхода за границы
+    
