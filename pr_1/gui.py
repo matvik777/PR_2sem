@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,QSpinBox
+from laser_canvas import LaserCanvas
 from network_client import NetworkClient
 
 class LaserApp(QWidget):
@@ -6,13 +7,16 @@ class LaserApp(QWidget):
         super().__init__()
         self.setWindowTitle("Управление лазером")
         self.client = NetworkClient()
-        
+        self.canvas = LaserCanvas()
         #обновление статуса
         
         # Поля ввода
         self.x_input = QSpinBox()
         self.y_input = QSpinBox()
         self.speed_input = QSpinBox()
+        
+        self.x_input.setRange(0, 500)
+        self.y_input.setRange(0, 500)
         self.speed_input.setRange(1, 10)
         
         #Подписи
@@ -50,6 +54,7 @@ class LaserApp(QWidget):
         
         #Общий макет (сначала ввод, потом кнопки)
         main_layout = QVBoxLayout()
+        main_layout.addWidget(self.canvas)
         main_layout.addLayout(input_layout)
         main_layout.addLayout(button_layout)
         self.setLayout(main_layout)
@@ -61,14 +66,23 @@ class LaserApp(QWidget):
         self.btn_reset.clicked.connect(lambda: self.client.send_command({"cmd": "reset"}))
         self.btn_status.clicked.connect(self.update_status)
         
+    
+    def update_status(self):
+        status = self.client.get_status()
+        print(f"Текущий статус: {status}")           
+
     def send_move_command(self):
         x = self.x_input.value()
         y = self.y_input.value()
         speed = self.speed_input.value()
-        self.client.send_command({"cmd": "move", "x": x, "y": y, "speed": speed})
-    def update_status(self):
-        status = self.client.get_status()
-        print(f"Текущий статус: {status}")           
+        
+        self.client.send_command({"cmd": "move", "x": x, "y": y, "speed": speed })
+        print(f"Двигаем лазер в {x}, {y}")
+        self.canvas.update_laser_position(x, y, speed)
+        
+        
+        
+
 if __name__ == "__main__":
     app = QApplication([])
     window = LaserApp()
